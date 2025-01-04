@@ -1,41 +1,6 @@
-// Globale Variablen
-let autocomplete;
-let marker;
 let map;
-
-$(document).ready(function () {
-  // Initialisiere zuerst die Karte
-  initMap();
-  // Dann Autocomplete
-  initAutocomplete();
-
-  // Event-Handler für den Button
-  $("#showDetailsBtn").click(function () {
-    showPlaceDetails();
-  });
-});
-
-/**
- * Erstellt eine leere Karte, zentriert auf einen Default-Standort,
- * z.B. Koordinaten von Zürich.
- */
-
-async function initMap() {
-  const { Map } = await google.maps.importLibrary("maps");
-  const defaultCenter = { lat: 47.5211446, lng: 7.671223399999999 };
-
-  map = new Map(document.getElementById("map"), {
-    center: defaultCenter,
-    zoom: 14,
-  });
-  // HIER: Marker anlegen
-  marker = new google.maps.Marker({
-    position: defaultCenter,
-    map: map,
-    title: "Startort",
-  });
-}
-
+let marker;
+let autocomplete;
 /**
  * Initialisiert Google Places Autocomplete mit dem Input-Feld.
  */
@@ -44,6 +9,26 @@ function initAutocomplete() {
 
   autocomplete = new google.maps.places.Autocomplete(input, {
     fields: ["formatted_address", "geometry"],
+  });
+
+  // Event listener for place changed
+  autocomplete.addListener("place_changed", showPlaceDetails);
+}
+
+/**
+ * Initialisiert die Karte und den Marker.
+ */
+function initMap() {
+  const defaultPosition = { lat: 47.4979, lng: 8.7296 }; // Default position (e.g., Zurich, Switzerland)
+
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: defaultPosition,
+    zoom: 15,
+  });
+
+  marker = new google.maps.Marker({
+    position: defaultPosition,
+    map: map,
   });
 }
 
@@ -62,15 +47,28 @@ function showPlaceDetails() {
 
   // 1) Adresse im DOM anzeigen
   const address = place.formatted_address || "Keine Adresse gefunden";
-  $("#addressOutput").text(address);
+  $("#addressOutput").fadeOut(function () {
+    $(this).text(address).fadeIn();
+  });
 
   // 2) Koordinaten im DOM anzeigen
   const lat = place.geometry.location.lat();
   const lng = place.geometry.location.lng();
-  $("#coordsOutput").text(`Lat: ${lat}, Lng: ${lng}`);
+  $("#coordsOutput").fadeOut(function () {
+    $(this).text(`Lat: ${lat}, Lng: ${lng}`).fadeIn();
+  });
 
   // 3) Karte aktualisieren
   updateMap(lat, lng);
+
+  // 4) Daten im Local Storage speichern
+  localStorage.setItem("address", address);
+  localStorage.setItem("lat", lat);
+  localStorage.setItem("lng", lng);
+
+  // 5) Ergebnisbereich und Karte anzeigen
+  $("#resultContainer").show();
+  $("#map").show();
 }
 
 /**
@@ -78,13 +76,38 @@ function showPlaceDetails() {
  */
 function updateMap(lat, lng) {
   // Neue Position
-  const newPosition = { lat: lat, lng: lng };
-
-  // Karte zentrieren
-  map.setCenter(newPosition);
-  map.setZoom(15); // optional etwas ranzoomen
-
-  // Marker versetzen
-  marker.setPosition(newPosition);
-  marker.setTitle("Gewählter Ort");
+  const position = { lat, lng };
+  map.setCenter(position);
+  marker.setPosition(position);
 }
+
+/**
+ * Lädt den gespeicherten Zustand aus dem Local Storage und aktualisiert den DOM und die Karte.
+ */
+function loadSavedState() {
+  const address = localStorage.getItem("address");
+  const lat = localStorage.getItem("lat");
+  const lng = localStorage.getItem("lng");
+
+  if (address && lat && lng) {
+    // Adresse im DOM anzeigen
+    $("#addressOutput").text(address);
+
+    // Koordinaten im DOM anzeigen
+    $("#coordsOutput").text(`Lat: ${lat}, Lng: ${lng}`);
+
+    // Karte aktualisieren
+    updateMap(parseFloat(lat), parseFloat(lng));
+
+    // Ergebnisbereich und Karte anzeigen
+    $("#resultContainer").show();
+    $("#map").show();
+  }
+}
+
+// Beim Laden der Seite den gespeicherten Zustand laden
+$(document).ready(function () {
+  initMap();
+  initAutocomplete();
+  loadSavedState();
+});
