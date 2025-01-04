@@ -1,6 +1,7 @@
 let map;
 let marker;
 let autocomplete;
+
 /**
  * Initialisiert Google Places Autocomplete mit dem Input-Feld.
  */
@@ -37,6 +38,14 @@ function initMap() {
  * und zeigt sie im DOM und auf der Karte an.
  */
 function showPlaceDetails() {
+  const input = document.getElementById("searchInput").value;
+
+  // Wenn das Eingabefeld leer ist, eine Fehlermeldung anzeigen
+  if (!input) {
+    alert("Bitte geben Sie einen Ort ein!");
+    return;
+  }
+
   const place = autocomplete.getPlace();
 
   // Wenn Place oder Geometry fehlt, war das kein gültiger Ort.
@@ -105,9 +114,33 @@ function loadSavedState() {
   }
 }
 
+/**
+ * Überprüft, ob die Google Maps API geladen ist.
+ */
+function checkGoogleMapsAPI() {
+  if (typeof google === "undefined" || typeof google.maps === "undefined") {
+    alert(
+      "Google Maps API konnte nicht geladen werden. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+    );
+  }
+}
+
 // Beim Laden der Seite den gespeicherten Zustand laden
 $(document).ready(function () {
+  checkGoogleMapsAPI();
   initMap();
   initAutocomplete();
   loadSavedState();
+
+  // Event listener for the button click
+  $("#showDetailsBtn").click(function () {
+    const input = document.getElementById("searchInput").value;
+
+    // Wenn das Eingabefeld leer ist oder der Ort nicht vollständig ist, eine Fehlermeldung anzeigen
+    if (!input) {
+      alert("Bitte geben Sie einen vollständigen Ort ein!");
+    } else {
+      showPlaceDetails();
+    }
+  });
 });
